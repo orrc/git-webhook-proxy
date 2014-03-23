@@ -1,0 +1,158 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"github.com/orrc/git-webhook-proxy/hooks"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"os/exec"
+	"reflect"
+	"strings"
+)
+
+type Handler struct {
+	mirrorRootDir string
+	remoteUrl     string
+	proxy         http.Handler
+}
+
+func NewHandler(mirrorRootDir, remoteUrl string) (h *Handler, err error) {
+	backendUrl, err := url.Parse(remoteUrl)
+	proxy := httputil.NewSingleHostReverseProxy(backendUrl)
+
+	// Ensure we send the correct Host header to the backend
+	defaultDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		defaultDirector(req)
+		req.Host = backendUrl.Host
+	}
+
+	h = &Handler{
+		mirrorRootDir: mirrorRootDir,
+		remoteUrl:     remoteUrl,
+		proxy:         proxy,
+	}
+	return
+}
+
+func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Log request
+	log.Printf("Incoming webhook from %s %s %s\n", req.RemoteAddr, req.Method, req.URL)
+
+	// Determine which handler to use
+	// TODO: This won't work well for e.g. "/jenkins/git/notifyCommit"
+	var hookType hooks.Webhook
+	switch req.URL.Path {
+	case "/git/notifyCommit":
+		hookType = hooks.JenkinsHook{}
+	case "/github-webhook/":
+		hookType = hooks.JenkinsGitHubHook{}
+	default:
+		log.Println("No hook handler found!")
+		http.NotFound(w, req)
+		return
+	}
+
+	// Parse the Git repo URI from the webhook request
+	repoUri, err := hookType.GetGitRepoUri(req)
+	if err != nil {
+		msg := fmt.Sprintf("%s returned error: %s", reflect.TypeOf(hookType), err)
+		log.Println(msg)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+	if repoUri == "" {
+		msg := fmt.Sprintf("%s could not determine the repository URL from this request", reflect.TypeOf(hookType), err)
+		log.Println(msg)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	// Clone or mirror the repo
+	// TODO: Test what happens if the HTTP client disappears in the middle of a long clone
+	err = updateOrCloneRepoMirror(h.mirrorRootDir, repoUri)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Proxy the original webhook request to the backend
+	log.Printf("Proxying webhook request to %s\n", h.remoteUrl)
+	h.proxy.ServeHTTP(w, req)
+}
+
+func updateOrCloneRepoMirror(rootDir, repoUri string) (err error) {
+	// Check whether we have cloned this repo already
+	repoPath := getMirrorPathForRepo(rootDir, repoUri)
+	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
+		// TODO: Also need to somehow detect whether a directory has a full clone, or failed...
+		err = cloneRepo(rootDir, repoUri)
+		if err != nil {
+			err = errors.New(fmt.Sprintf("Failed to clone %s: %s", repoUri, err.Error()))
+		}
+		return err
+	}
+
+	// If we already have clone the repo, ensure that it is up-to-date
+	log.Printf("Updating mirror at %s from %s\n", repoPath, repoUri)
+	cmd := exec.Command("git", "remote", "update")
+	cmd.Dir = repoPath
+	err = cmd.Run()
+	if err != nil {
+		err = errors.New(fmt.Sprintf("Failed to update %s: %s", repoUri, err.Error()))
+	}
+	return
+}
+
+func cloneRepo(rootDir, repoUri string) (err error) {
+	// Ensure the mirror root directory exists
+	err = os.MkdirAll(rootDir, 0700)
+	if err != nil {
+		return
+	}
+
+	// Delete the directory if cloning fails
+	defer func() {
+		if err != nil {
+			os.Remove(getMirrorPathForRepo(rootDir, repoUri))
+		}
+	}()
+
+	// TODO: We may need to transform incoming repo URIs to add user credentials so they can be cloned
+	log.Printf("Cloning %s to %s\n", repoUri, rootDir)
+	cmd := exec.Command("git", "clone", "--mirror", repoUri, getDirNameForRepo(repoUri))
+	cmd.Dir = rootDir
+	err = cmd.Run()
+	return
+}
+
+func getMirrorPathForRepo(rootDir, repoUri string) string {
+	return fmt.Sprintf("%s/%s", rootDir, getDirNameForRepo(repoUri))
+}
+
+func getDirNameForRepo(repoUri string) string {
+	repoUri = strings.TrimSpace(repoUri)
+	repoUri = strings.TrimSuffix(repoUri, "/")
+	repoUri = strings.TrimSuffix(repoUri, ".git")
+	repoUri = strings.ToLower(repoUri)
+
+	if strings.Contains(repoUri, "://") {
+		uri, _ := url.Parse(repoUri)
+		if i := strings.Index(uri.Host, ":"); i != -1 {
+			uri.Host = uri.Host[:i]
+		}
+		return fmt.Sprintf("%s/%s.git", uri.Host, uri.Path[1:])
+	}
+
+	if i := strings.Index(repoUri, "@"); i != -1 {
+		repoUri = repoUri[i+1:]
+	}
+	repoUri = strings.Replace(repoUri, ":", "/", 1)
+	repoUri = strings.Replace(repoUri, "//", "/", -1)
+	return repoUri + ".git"
+}
