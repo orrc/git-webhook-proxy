@@ -21,6 +21,7 @@ var (
 
 	// Git options
 	mirrorPath = flag.String("mirror-path", "/tmp/mirror", "Directory to which git repositories should be mirrored")
+	gitPath    = flag.String("git", "/usr/bin/git", "Path to the git binary")
 )
 
 func usage() {
@@ -55,7 +56,7 @@ func main() {
 	log.Println("Webhook requests will be forwarded to:", *remoteUrl)
 
 	// Start the listening web server
-	handler, err := NewHandler(*mirrorPath, *remoteUrl)
+	handler, err := NewHandler(*gitPath, *mirrorPath, *remoteUrl)
 	if err != nil {
 		log.Fatal("Invalid config:", err)
 	}
