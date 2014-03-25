@@ -22,7 +22,7 @@ This process blocks until the repository has been cloned or updated, and then th
 
 Building
 --------
-You should be able to
+You should be able to  
 `go get github.com/orrc/git-webhook-proxy`
 
 Configuration
@@ -32,9 +32,8 @@ You should run git-webhook-proxy on the same machine as your CI server, or on a 
 
 Running `./git-webhook-proxy --help` will display the command line options.
 
-By default, the proxy listens for TLS connections on port 8443.  You will need to provide your TLS certificate in PEM format (if intermediate certificates are required, append them to your certificate file) and private key.
-
-Listening can be enabled via `--[tls-]listen 127.0.0.1:1234`, or disabled via `--[tls-]listen=`.
+You must explicitly specify the address(es) to listen on, e.g. `--listen 127.0.0.1:8000` for HTTP, or `--tls-listen :8443` for TLS.
+To accept TLS connections, you must provide your TLS certificate in PEM format (if intermediate certificates are required, append them to your certificate file) and private key.
 
 The interface and port given should be reachable from the public internet, if you want to receive webhooks from services like GitHub.
 

@@ -12,7 +12,7 @@ import (
 var (
 	// Listening web server options
 	listenAddress      = flag.String("listen", "", "Specify an address to accept HTTP requests, e.g. \":8000\"")
-	tlsListenAddress   = flag.String("tls-listen", ":8443", "Specify an address to accept HTTPS requests, e.g. \":8443\"")
+	tlsListenAddress   = flag.String("tls-listen", "", "Specify an address to accept HTTPS requests, e.g. \":8443\"")
 	tlsCertificateFile = flag.String("tls-cert", "proxy.crt", "Path to the TLS certificate chain to use")
 	tlsPrivateKeyFile  = flag.String("tls-key", "proxy.key", "Path to the private key for the TLS certificate")
 
@@ -42,7 +42,7 @@ func startListening(handler http.Handler, address, tlsAddress, tlsCertFile, tlsK
 		isRunning = true
 	}
 	if !isRunning {
-		log.Fatal("Quitting as both HTTP and TLS were disabled")
+		log.Fatal("Quitting as neither HTTP nor TLS were enabled")
 	}
 }
 
