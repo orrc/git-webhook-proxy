@@ -43,7 +43,7 @@ func NewHandler(gitPath, mirrorRootDir, remoteUrl string) (h *Handler, err error
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Log request
-	log.Printf("Incoming webhook from %s %s %s\n", req.RemoteAddr, req.Method, req.URL)
+	log.Printf("Incoming webhook from %s %s %s", req.RemoteAddr, req.Method, req.URL)
 
 	// Determine which handler to use
 	// TODO: This won't work well for e.g. "/jenkins/git/notifyCommit"
@@ -84,11 +84,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Proxy the original webhook request to the backend
-	log.Printf("Proxying webhook request to %s\n", h.remoteUrl)
+	log.Printf("Proxying webhook request to %s/%s\n", h.remoteUrl, req.URL)
 	h.proxy.ServeHTTP(w, req)
 }
 
-func (h *Handler) updateOrCloneRepoMirror(repoUri string) (err error) {
+func (h *Handler) updateOrCloneRepoMirror(repoUri string) error {
 	// Check whether we have cloned this repo already
 	repoPath := h.getMirrorPathForRepo(repoUri)
 	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
@@ -101,21 +101,23 @@ func (h *Handler) updateOrCloneRepoMirror(repoUri string) (err error) {
 	}
 
 	// If we already have clone the repo, ensure that it is up-to-date
-	log.Printf("Updating mirror at %s from %s\n", repoPath, repoUri)
-	cmd := exec.Command(h.gitPath, "remote", "update")
+	log.Printf("Updating mirror at %s", repoPath)
+	cmd := exec.Command(h.gitPath, "remote", "update", "-p")
 	cmd.Dir = repoPath
-	err = cmd.Run()
-	if err != nil {
-		err = errors.New(fmt.Sprintf("Failed to update %s: %s", repoUri, err.Error()))
+	err := cmd.Run()
+	if err == nil {
+		log.Printf("Successfully updated %s", repoPath)
+	} else {
+		err = fmt.Errorf("Failed to update %s: %s", repoPath, err.Error())
 	}
-	return
+	return err
 }
 
-func (h *Handler) cloneRepo(repoUri string) (err error) {
+func (h *Handler) cloneRepo(repoUri string) error {
 	// Ensure the mirror root directory exists
 	err := os.MkdirAll(h.mirrorRootDir, 0700)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Delete the directory if cloning fails
@@ -130,7 +132,10 @@ func (h *Handler) cloneRepo(repoUri string) (err error) {
 	cmd := exec.Command(h.gitPath, "clone", "--mirror", repoUri, getDirNameForRepo(repoUri))
 	cmd.Dir = h.mirrorRootDir
 	err = cmd.Run()
-	return
+	if err == nil {
+		log.Printf("Successfully cloned %s", repoUri)
+	}
+	return err
 }
 
 func (h *Handler) getMirrorPathForRepo(repoUri string) string {
