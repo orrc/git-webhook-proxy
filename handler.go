@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 type Handler struct {
@@ -19,6 +20,7 @@ type Handler struct {
 	mirrorRootDir string
 	remoteUrl     string
 	proxy         http.Handler
+	requests      map[string]*sync.Mutex
 }
 
 func NewHandler(gitPath, mirrorRootDir, remoteUrl string) (h *Handler, err error) {
@@ -37,6 +39,7 @@ func NewHandler(gitPath, mirrorRootDir, remoteUrl string) (h *Handler, err error
 		mirrorRootDir: mirrorRootDir,
 		remoteUrl:     remoteUrl,
 		proxy:         proxy,
+		requests:      make(map[string]*sync.Mutex),
 	}
 	return
 }
@@ -73,6 +76,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+
+	// Check whether we're already working on updating this repo
+	// TODO: Coalesce multiple blocked requests
+	if _, exists := h.requests[repoUri]; !exists {
+		h.requests[repoUri] = &sync.Mutex{}
+	}
+	lock := h.requests[repoUri]
+	lock.Lock()
+	defer lock.Unlock()
 
 	// Clone or mirror the repo
 	// TODO: Test what happens if the HTTP client disappears in the middle of a long clone
