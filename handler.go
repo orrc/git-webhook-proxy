@@ -55,7 +55,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	case "/git/notifyCommit":
 		hookType = hooks.JenkinsHook{}
 	case "/github-webhook/":
-		hookType = hooks.JenkinsGitHubHook{}
+		hookType = hooks.GitHubFormHook{}
 	default:
 		log.Println("No hook handler found!")
 		http.NotFound(w, req)
