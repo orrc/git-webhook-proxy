@@ -3,6 +3,7 @@ package hooks
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -60,4 +61,9 @@ func getRequestBody(req *http.Request) (string, error) {
 
 	// Return the body to the caller
 	return string(bodyBuf), nil
+}
+
+func getSshUriForUrl(httpUrl string) (string, error) {
+	u, err := url.Parse(httpUrl)
+	return fmt.Sprintf("git@%s:%s.git", u.Host, u.Path[1:]), err
 }

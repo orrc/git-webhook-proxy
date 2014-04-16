@@ -3,9 +3,7 @@ package hooks
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 )
 
 // gitHubHookPayload reflects the parts of the GitHub
@@ -48,10 +46,5 @@ func getSshUriFromGitHubWebhookJson(body string) (string, error) {
 		return "", errors.New("No URL found in webhook payload")
 	}
 
-	return getSshUriForGitHubUrl(repoHttpUrl)
-}
-
-func getSshUriForGitHubUrl(httpUrl string) (string, error) {
-	u, err := url.Parse(httpUrl)
-	return fmt.Sprintf("git@%s:%s.git", u.Host, u.Path[1:]), err
+	return getSshUriForUrl(repoHttpUrl)
 }
