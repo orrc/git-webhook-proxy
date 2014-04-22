@@ -20,9 +20,13 @@ This server generates such local repositories on demand — using `git clone --m
 
 This process blocks until the repository has been cloned or updated, and then the webhook is forwarded to the CI server, whose response will be returned to the original initiator of the webhook.
 
+Download
+--------
+Pre-built binaries are not (yet) available...
+
 Building
 --------
-You should be able to  
+Once you have the [Go development tools](http://golang.org/doc/install) installed, you should be able to run:  
 `go get github.com/orrc/git-webhook-proxy`
 
 Configuration
@@ -30,7 +34,7 @@ Configuration
 ### git-webhook-proxy
 You should run git-webhook-proxy on the same machine as your CI server, or on a machine that has access to the same disk space as your CI server.
 
-Running `./git-webhook-proxy --help` will display the command line options.
+Running `git-webhook-proxy --help` will display the command line options.
 
 You must explicitly specify the address(es) to listen on, e.g. `--listen 127.0.0.1:8000` for HTTP, or `--tls-listen :8443` for TLS.
 To accept TLS connections, you must provide your TLS certificate in PEM format (if intermediate certificates are required, append them to your certificate file) and private key.
