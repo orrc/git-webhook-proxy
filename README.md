@@ -63,11 +63,11 @@ So, with the `--mirror-path` of `/opt/git/mirrors`, the full path to enter into 
 
 Limitations
 -----------
-Currently, only GET requests, in the form `/git/notifyCommit?url=<repo_uri>` are processed.
+Currently, only requests with the exact path of `/git/notifyCommit?url=<repo_uri>` or `/github-webhook/` are processed.
 
-This is the standard URL format used by the Git plugin for Jenkins, making this tool a drop-in replacement if you use Jenkins.
+These are the standard URL formats used by the Git and GitHub plugins for Jenkins respectively, making this tool a drop-in replacement if you use Jenkins.
 
-POST requests (e.g. as "regular" GitHub webhooks use) are not yet supported.
+In the future, this will be more flexible.
 
 Licence
 -------
