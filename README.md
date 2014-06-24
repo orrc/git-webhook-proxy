@@ -22,7 +22,7 @@ This process blocks until the repository has been cloned or updated, and then th
 
 Download
 --------
-Pre-built binaries are not (yet) available...
+Binaries for select platforms are available from the [releases page](https://github.com/orrc/git-webhook-proxy/releases).
 
 Building
 --------
