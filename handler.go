@@ -71,7 +71,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if repoUri == "" {
-		msg := fmt.Sprintf("%s could not determine the repository URL from this request", reflect.TypeOf(hookType), err)
+		msg := fmt.Sprintf("%s could not determine the repository URL from this request", reflect.TypeOf(hookType))
 		log.Println(msg)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
