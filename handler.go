@@ -119,6 +119,13 @@ func (h *Handler) updateOrCloneRepoMirror(repoUri string) error {
 	err := cmd.Run()
 	if err == nil {
 		log.Printf("Successfully updated %s", repoPath)
+
+		// Also run "git gc", if required, to clean up afterwards
+		cmd := exec.Command(h.gitPath, "gc", "--aggressive", "--auto")
+		cmd.Dir = repoPath
+
+		// But we don't really care about the outcome
+		cmd.Run()
 	} else {
 		err = fmt.Errorf("Failed to update %s: %s", repoPath, err.Error())
 	}
