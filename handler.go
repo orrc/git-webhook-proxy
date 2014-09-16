@@ -121,7 +121,7 @@ func (h *Handler) updateOrCloneRepoMirror(repoUri string) error {
 		log.Printf("Successfully updated %s", repoPath)
 
 		// Also run "git gc", if required, to clean up afterwards
-		cmd := exec.Command(h.gitPath, "gc", "--aggressive", "--auto")
+		cmd := exec.Command(h.gitPath, "gc", "--prune=now", "--aggressive", "--auto")
 		cmd.Dir = repoPath
 
 		// But we don't really care about the outcome
