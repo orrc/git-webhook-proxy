@@ -17,7 +17,7 @@ var (
 	tlsPrivateKeyFile  = flag.String("tls-key", "proxy.key", "Path to the private key for the TLS certificate")
 
 	// Remote web server options
-	remoteUrl = flag.String("remote", "http://localhost:8080", "HTTP URL to forward incoming hooks to, upon successful mirroring")
+	remoteUrl = flag.String("remote", "", "HTTP URL to forward incoming hooks to, upon successful mirroring")
 
 	// Git options
 	mirrorPath = flag.String("mirror-path", "/tmp/mirror", "Directory to which git repositories should be mirrored")
@@ -53,7 +53,9 @@ func main() {
 
 	// Show some basic config info
 	log.Println("Git repositories will be mirrored to: ", *mirrorPath)
-	log.Println("Webhook requests will be forwarded to:", *remoteUrl)
+	if *remoteUrl != "" {
+		log.Println("Webhook requests will be forwarded to:", *remoteUrl)
+	}
 
 	// Start the listening web server
 	handler, err := NewHandler(*gitPath, *mirrorPath, *remoteUrl)
