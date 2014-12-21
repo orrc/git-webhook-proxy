@@ -95,9 +95,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Proxy the original webhook request to the backend
-	log.Printf("Proxying webhook request to %s/%s\n", h.remoteUrl, req.URL)
-	h.proxy.ServeHTTP(w, req)
+	if h.remoteUrl != "" {
+		// Proxy the original webhook request to the backend
+		log.Printf("Proxying webhook request to %s/%s\n", h.remoteUrl, req.URL)
+		h.proxy.ServeHTTP(w, req)
+	}
 }
 
 func (h *Handler) updateOrCloneRepoMirror(repoUri string) error {
