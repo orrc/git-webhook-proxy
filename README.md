@@ -43,7 +43,7 @@ The interface and port given should be reachable from the public internet, if yo
 
 The directory to which Git repositories will be mirrored is set by the `--mirror-path` flag.
 
-The URL to which incoming webhook requests should be forwarded, is configured with `--remote`.
+The URL to which incoming webhook requests should be forwarded, is configured with `--remote`. This parameter can be omitted if you just want to keep a repository mirror up-to-date, and don't want to forward incoming webhooks to another server.
 
 ### Webhooks
 Set up webhooks as normal at your Git hosting provider.
