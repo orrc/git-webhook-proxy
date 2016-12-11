@@ -1,7 +1,7 @@
 git-webhook-proxy
 =================
 
-Acts as a proxy for incoming webhooks between your Git hosting provider and your continuous integration server.
+Acts as a proxy, written in the go language ( http://golang.org/ ), for incoming webhooks between your Git hosting provider and your continuous integration server.
 
 When a Git commit webhook is received, the repository in question will be mirrored locally (or updated, if it already exists), and then the webhook will be passed on to your CI server, where it can start a build, using the up-to-date local mirror.
 
